@@ -38,13 +38,22 @@ const getPlaceReviews = async (req, res) => {
     const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
       params: {
         place_id: placeId,
-        fields: "reviews",
+        fields: "reviews,rating,user_ratings_total",
         language: "tr",
         key: GOOGLE_API_KEY,
       },
     });
 
-    const reviews = response.data.result?.reviews || [];
+    const result = response.data.result;
+    
+    if (!result) {
+      return res.status(404).json({ error: "Restoran bilgileri bulunamadı." });
+    }
+
+    const rating = result.rating || 0; // 📌 Restoranın genel puanı
+    const ratingCount = result.user_ratings_total || 0; // 📌 Kaç kişi puan vermiş
+    const reviews = result.reviews || [];
+
     const formattedReviews = reviews.map(review => ({
       author: review.author_name,
       rating: review.rating,
@@ -52,7 +61,12 @@ const getPlaceReviews = async (req, res) => {
       time: new Date(review.time * 1000).toLocaleString("tr-TR"),
     }));
 
-    res.json(formattedReviews);
+    res.json({
+      rating,
+      ratingCount,
+      reviews: formattedReviews.length > 0 ? formattedReviews : "Bu restoran için yorum bulunmuyor."
+    });
+
   } catch (error) {
     console.error("🔥 Yorumları çekerken hata oluştu:", error);
     res.status(500).json({ error: "Yorumlar alınamadı." });
