@@ -31,8 +31,7 @@ const getPlacePhotos = async (req, res) => {
 
 // 📌 **Google Places API'den yorumları al (Sayfalama destekli)**
 const getPlaceReviews = async (req, res) => {
-  const { placeId, pageToken } = req.query; // `pageToken` parametresini aldık
-
+  const { placeId, pageToken } = req.query; // 📌 `pageToken` parametresini alıyoruz
   if (!placeId) return res.status(400).json({ error: "Place ID gereklidir." });
 
   try {
@@ -44,19 +43,26 @@ const getPlaceReviews = async (req, res) => {
     };
 
     if (pageToken) {
-      params.pageToken = pageToken; // Sayfalama için `pageToken` ekliyoruz
+      params.pagetoken = pageToken; // 📌 Eğer sayfalama token'ı varsa ekliyoruz
     }
 
-    const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", { params });
+    const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
+      params,
+    });
+
+    if (response.data.status !== "OK") {
+      return res.status(404).json({ error: "Restoran bilgileri alınamadı veya API sınırına ulaşıldı." });
+    }
 
     const result = response.data.result;
-    
+    const nextPageToken = response.data.next_page_token || null; // 📌 Sayfalama için token
+
     if (!result) {
       return res.status(404).json({ error: "Restoran bilgileri bulunamadı." });
     }
 
-    const rating = result.rating || 0; // 📌 Restoranın genel puanı
-    const ratingCount = result.user_ratings_total || 0; // 📌 Kaç kişi puan vermiş
+    const rating = result.rating || 0;
+    const ratingCount = result.user_ratings_total || 0;
     const reviews = result.reviews || [];
 
     const formattedReviews = reviews.map(review => ({
@@ -70,7 +76,7 @@ const getPlaceReviews = async (req, res) => {
       rating,
       ratingCount,
       reviews: formattedReviews.length > 0 ? formattedReviews : [],
-      nextPageToken: response.data.next_page_token || null, // Sayfalama desteği eklendi
+      nextPageToken, // 📌 Eğer daha fazla yorum varsa frontend bunu kullanabilir
     });
 
   } catch (error) {
@@ -78,3 +84,5 @@ const getPlaceReviews = async (req, res) => {
     res.status(500).json({ error: "Yorumlar alınamadı." });
   }
 };
+
+module.exports = { getPlacePhotos, getPlaceReviews };
