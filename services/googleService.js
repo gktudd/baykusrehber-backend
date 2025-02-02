@@ -31,8 +31,8 @@ const getPlacePhotos = async (req, res) => {
 
 // 📌 **Google Places API'den yorumları al (Sayfalama destekli)**
 const getPlaceReviews = async (req, res) => {
-  const { placeId } = req.query;
-  const { pageToken } = req.query; // 📌 `pageToken` parametresi ekledik
+  const { placeId, pageToken } = req.query; // `pageToken` parametresini aldık
+
   if (!placeId) return res.status(400).json({ error: "Place ID gereklidir." });
 
   try {
@@ -44,22 +44,19 @@ const getPlaceReviews = async (req, res) => {
     };
 
     if (pageToken) {
-      params.pagetoken = pageToken; // 📌 Eğer sayfalama token'ı varsa ekliyoruz
+      params.pageToken = pageToken; // Sayfalama için `pageToken` ekliyoruz
     }
 
-    const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
-      params,
-    });
+    const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", { params });
 
     const result = response.data.result;
-    const nextPageToken = response.data.next_page_token; // 📌 Daha fazla yorum olup olmadığını kontrol et
-
+    
     if (!result) {
       return res.status(404).json({ error: "Restoran bilgileri bulunamadı." });
     }
 
-    const rating = result.rating || 0;
-    const ratingCount = result.user_ratings_total || 0;
+    const rating = result.rating || 0; // 📌 Restoranın genel puanı
+    const ratingCount = result.user_ratings_total || 0; // 📌 Kaç kişi puan vermiş
     const reviews = result.reviews || [];
 
     const formattedReviews = reviews.map(review => ({
@@ -73,7 +70,7 @@ const getPlaceReviews = async (req, res) => {
       rating,
       ratingCount,
       reviews: formattedReviews.length > 0 ? formattedReviews : [],
-      nextPageToken: nextPageToken || null, // 📌 Daha fazla yorum varsa, token döndürülür
+      nextPageToken: response.data.next_page_token || null, // Sayfalama desteği eklendi
     });
 
   } catch (error) {
@@ -81,5 +78,3 @@ const getPlaceReviews = async (req, res) => {
     res.status(500).json({ error: "Yorumlar alınamadı." });
   }
 };
-
-module.exports = { getPlacePhotos, getPlaceReviews };
