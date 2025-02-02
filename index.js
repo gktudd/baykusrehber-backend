@@ -36,28 +36,21 @@ const timeAgo = (timestamp) => {
     return "Az önce";
 };
 
-// 📌 GOOGLE YORUMLARI GETİRME ENDPOINTİ (SAYFALAMA DESTEKLİ)
+// 📌 GOOGLE YORUMLARI GETİRME ENDPOINTİ (SADECE 5 YORUM)
 app.get("/api/google-reviews", async (req, res) => {
-    const { placeId, pageToken } = req.query;
+    const { placeId } = req.query;
     if (!placeId) {
         return res.status(400).json({ error: "Place ID gereklidir." });
     }
 
     try {
-        const params = {
-            place_id: placeId,
-            fields: "reviews,rating,user_ratings_total",
-            language: "tr",
-            key: GOOGLE_PLACES_API_KEY,
-        };
-
-        if (pageToken) {
-            params.pagetoken = pageToken; // 📌 Sayfalama için `pageToken` ekleniyor
-            console.log("🔵 Sayfalama Token Kullanıldı:", pageToken);
-        }
-
         const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
-            params,
+            params: {
+                place_id: placeId,
+                fields: "reviews,rating,user_ratings_total",
+                language: "tr",
+                key: GOOGLE_PLACES_API_KEY,
+            },
         });
 
         if (response.data.status !== "OK") {
@@ -70,17 +63,12 @@ app.get("/api/google-reviews", async (req, res) => {
             return res.status(404).json({ error: "Restoran bilgileri bulunamadı." });
         }
 
-        let nextPageToken = response.data.next_page_token || null; // 📌 Sayfalama için token
-        if (nextPageToken) {
-            console.log("✅ `nextPageToken` bulundu. 2 saniye bekleniyor...");
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 📌 Google API önerisine göre 2 saniye bekleme
-        }
-
         const rating = result.rating || 0;
         const ratingCount = result.user_ratings_total || 0;
         const reviews = result.reviews || [];
 
-        const formattedReviews = reviews.map(review => ({
+        // 📌 **SADECE İLK 5 YORUMU AL**
+        const formattedReviews = reviews.slice(0, 5).map(review => ({
             author: review.author_name,
             rating: review.rating,
             text: review.text,
@@ -88,13 +76,11 @@ app.get("/api/google-reviews", async (req, res) => {
         }));
 
         console.log("✅ Yorumlar başarıyla çekildi! Yorum Sayısı:", formattedReviews.length);
-        console.log("🔵 Yeni Sayfalama Token:", nextPageToken);
 
         res.json({
             rating,
             ratingCount,
-            reviews: formattedReviews,
-            nextPageToken, // 📌 Daha fazla yorum varsa frontend bunu kullanabilir
+            reviews: formattedReviews, // 📌 Sadece 5 yorum döndürüyoruz
         });
 
     } catch (error) {

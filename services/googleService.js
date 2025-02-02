@@ -5,7 +5,7 @@ const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 // 📌 **Google Places API'den fotoğrafları al**
 const getPlacePhotos = async (req, res) => {
-  const { placeId } = req.query;
+  const { placeId } = req.query; // `query` olarak güncellendi
   if (!placeId) return res.status(400).json({ error: "Place ID gereklidir." });
 
   try {
@@ -33,26 +33,19 @@ const getPlacePhotos = async (req, res) => {
   }
 };
 
-// 📌 **Google Places API'den yorumları al (Sayfalama destekli)**
+// 📌 **Google Places API'den YORUMLARI al (Sadece ilk 5 yorum)**
 const getPlaceReviews = async (req, res) => {
-  const { placeId, pageToken } = req.query; // 📌 `pageToken` parametresini alıyoruz
+  const { placeId } = req.query; // 📌 `query` olarak güncellendi
   if (!placeId) return res.status(400).json({ error: "Place ID gereklidir." });
 
   try {
-    const params = {
-      place_id: placeId,
-      fields: "reviews,rating,user_ratings_total",
-      language: "tr",
-      key: GOOGLE_API_KEY,
-    };
-
-    if (pageToken) {
-      params.pagetoken = pageToken; // 📌 Eğer sayfalama token'ı varsa ekliyoruz
-      console.log("🔵 Sayfalama Token Kullanıldı:", pageToken);
-    }
-
     const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
-      params,
+      params: {
+        place_id: placeId,
+        fields: "reviews,rating,user_ratings_total",
+        language: "tr",
+        key: GOOGLE_API_KEY,
+      },
     });
 
     if (response.data.status !== "OK") {
@@ -61,8 +54,6 @@ const getPlaceReviews = async (req, res) => {
     }
 
     const result = response.data.result;
-    const nextPageToken = response.data.next_page_token || null; // 📌 Sayfalama için token
-
     if (!result) {
       return res.status(404).json({ error: "Restoran bilgileri bulunamadı." });
     }
@@ -71,7 +62,8 @@ const getPlaceReviews = async (req, res) => {
     const ratingCount = result.user_ratings_total || 0;
     const reviews = result.reviews || [];
 
-    const formattedReviews = reviews.map(review => ({
+    // 📌 **Sadece İlk 5 Yorum Gösterilecek**
+    const formattedReviews = reviews.slice(0, 5).map(review => ({
       author: review.author_name,
       rating: review.rating,
       text: review.text,
@@ -79,13 +71,11 @@ const getPlaceReviews = async (req, res) => {
     }));
 
     console.log("✅ Yorumlar başarıyla çekildi! Yorum Sayısı:", formattedReviews.length);
-    console.log("🔵 Yeni Sayfalama Token:", nextPageToken);
 
     res.json({
       rating,
       ratingCount,
-      reviews: formattedReviews.length > 0 ? formattedReviews : [],
-      nextPageToken, // 📌 Eğer daha fazla yorum varsa frontend bunu kullanabilir
+      reviews: formattedReviews, // 📌 Sadece ilk 5 yorum döndürüyoruz
     });
 
   } catch (error) {
