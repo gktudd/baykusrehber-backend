@@ -5,7 +5,7 @@ const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 // 📌 **Google Places API'den fotoğrafları al**
 const getPlacePhotos = async (req, res) => {
-  const { placeId } = req.params;
+  const { placeId } = req.query;
   if (!placeId) return res.status(400).json({ error: "Place ID gereklidir." });
 
   try {
@@ -16,6 +16,10 @@ const getPlacePhotos = async (req, res) => {
         key: GOOGLE_API_KEY,
       },
     });
+
+    if (response.data.status !== "OK") {
+      return res.status(404).json({ error: "Fotoğraflar alınamadı veya API sınırına ulaşıldı." });
+    }
 
     const photos = response.data.result?.photos || [];
     const photoUrls = photos.map(photo => ({
@@ -44,6 +48,7 @@ const getPlaceReviews = async (req, res) => {
 
     if (pageToken) {
       params.pagetoken = pageToken; // 📌 Eğer sayfalama token'ı varsa ekliyoruz
+      console.log("🔵 Sayfalama Token Kullanıldı:", pageToken);
     }
 
     const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
@@ -51,6 +56,7 @@ const getPlaceReviews = async (req, res) => {
     });
 
     if (response.data.status !== "OK") {
+      console.error("❌ API Hatası:", response.data);
       return res.status(404).json({ error: "Restoran bilgileri alınamadı veya API sınırına ulaşıldı." });
     }
 
@@ -71,6 +77,9 @@ const getPlaceReviews = async (req, res) => {
       text: review.text,
       time: new Date(review.time * 1000).toLocaleString("tr-TR"),
     }));
+
+    console.log("✅ Yorumlar başarıyla çekildi! Yorum Sayısı:", formattedReviews.length);
+    console.log("🔵 Yeni Sayfalama Token:", nextPageToken);
 
     res.json({
       rating,
