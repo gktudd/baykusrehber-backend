@@ -36,42 +36,6 @@ const timeAgo = (timestamp) => {
     return "Az önce";
 };
 
-// 📌 GOOGLE FOTOĞRAFLARI GETİRME ENDPOINTİ
-app.get("/api/google-photos", async (req, res) => {
-    const placeId = req.query.placeId;
-    if (!placeId) {
-        return res.status(400).json({ error: "placeId parametresi gereklidir." });
-    }
-
-    try {
-        const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
-            params: {
-                place_id: placeId,
-                fields: "photos",
-                key: GOOGLE_PLACES_API_KEY,
-            },
-        });
-
-        if (response.data.status !== "OK") {
-            return res.status(404).json({ error: "Fotoğraflar alınamadı veya API sınırına ulaşıldı." });
-        }
-
-        const placeDetails = response.data.result;
-        if (!placeDetails || !placeDetails.photos) {
-            return res.status(404).json({ error: "Fotoğraf bulunamadı." });
-        }
-
-        const photoUrls = placeDetails.photos.map(photo =>
-            `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-        );
-
-        res.json(photoUrls);
-    } catch (error) {
-        console.error("🔥 Google Photos API hatası:", error.message);
-        res.status(500).json({ error: "Fotoğraflar alınamadı." });
-    }
-});
-
 // 📌 GOOGLE YORUMLARI GETİRME ENDPOINTİ (SAYFALAMA DESTEKLİ)
 app.get("/api/google-reviews", async (req, res) => {
     const { placeId, pageToken } = req.query;
@@ -106,7 +70,11 @@ app.get("/api/google-reviews", async (req, res) => {
             return res.status(404).json({ error: "Restoran bilgileri bulunamadı." });
         }
 
-        const nextPageToken = response.data.next_page_token || null; // 📌 Sayfalama için token
+        let nextPageToken = response.data.next_page_token || null; // 📌 Sayfalama için token
+        if (nextPageToken) {
+            console.log("✅ `nextPageToken` bulundu. 2 saniye bekleniyor...");
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 📌 Google API önerisine göre 2 saniye bekleme
+        }
 
         const rating = result.rating || 0;
         const ratingCount = result.user_ratings_total || 0;
