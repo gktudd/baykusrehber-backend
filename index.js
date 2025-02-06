@@ -13,7 +13,7 @@ const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 // 📌 **Zamanı "X zaman önce" formatına çevirme fonksiyonu**
 const timeAgo = (timestamp) => {
-    if (!timestamp) return "Bilinmeyen zaman"; // Eğer boşsa
+    if (!timestamp) return "Bilinmeyen zaman";
     const now = new Date();
     const reviewDate = new Date(timestamp * 1000);
     const diffInSeconds = Math.floor((now - reviewDate) / 1000);
@@ -37,7 +37,7 @@ const timeAgo = (timestamp) => {
     return "Az önce";
 };
 
-// 📌 **Google Places API'den fotoğrafları al**
+// 📌 **Google Places API'den FOTOĞRAFLARI al**
 app.get("/api/google-photos", async (req, res) => {
     const { placeId } = req.query;
     if (!placeId) {
@@ -66,9 +66,15 @@ app.get("/api/google-photos", async (req, res) => {
             return res.status(404).json({ error: "⚠️ Bu mekan için fotoğraf bulunamadı." });
         }
 
-        const photoUrls = photos.map(photo => ({
-            url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
-        }));
+        // 📌 **Fotoğraf URL'lerini oluştururken hata kontrolü yapıyoruz**
+        const photoUrls = photos.map(photo => {
+            if (!photo.photo_reference) return null; // Boş referansları atla
+            return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_PLACES_API_KEY}`;
+        }).filter(url => url !== null); // Geçersiz URL'leri temizle
+
+        if (photoUrls.length === 0) {
+            return res.status(404).json({ error: "⚠️ Geçerli fotoğraf bulunamadı." });
+        }
 
         res.json(photoUrls);
     } catch (error) {
