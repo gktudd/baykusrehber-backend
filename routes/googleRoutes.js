@@ -1,16 +1,19 @@
 const express = require("express");
-const { getPlacePhotos, getPlaceReviews,  getPlaceDistances } = require("../services/googleService");
+const {
+  getPlacePhotos,
+  getPlaceReviews,
+  getPlaceDistances,
+} = require("../services/googleService");
 
 const router = express.Router();
 
-// 📌 Google Places API'den fotoğrafları al
-router.get("/photos/:placeId", getPlacePhotos);
+// 📸 Google Places API'den fotoğrafları al
+router.get("/photos", getPlacePhotos); // ✅ Query param: ?placeId=...
 
-// 📌 Google Places API'den yorumları al
-router.get("/reviews/:placeId", getPlaceReviews);
+// 📝 Google Places API'den yorumları al
+router.get("/reviews", getPlaceReviews); // ✅ Query param: ?placeId=...
 
-//Google Matrix Api ile tam uzaklık, yürüme ve araç süresi hesaplayıcı
-router.get("/distances", getPlaceDistances); // 📌 Yeni rota eklendi
-
+// 📍 Google Distance Matrix API ile gerçek mesafe ve süreler
+router.get("/distances", getPlaceDistances); // ✅ Query param: ?origin=...&destinations=...
 
 module.exports = router;

@@ -32,7 +32,7 @@ const getPlacePhotos = async (req, res) => {
 
     res.json(photoUrls);
   } catch (error) {
-    console.error("🔥 Fotoğrafları çekerken hata oluştu:", error);
+    console.error("🔥 Fotoğrafları çekerken hata oluştu:", error.message);
     res.status(500).json({ error: "❌ Fotoğraflar alınamadı." });
   }
 };
@@ -79,7 +79,7 @@ const getPlaceReviews = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("🔥 Yorumları çekerken hata oluştu:", error);
+    console.error("🔥 Yorumları çekerken hata oluştu:", error.message);
     res.status(500).json({ error: "❌ Yorumlar alınamadı." });
   }
 };
@@ -93,6 +93,7 @@ const getPlaceDistances = async (req, res) => {
   }
 
   try {
+    // 🚗 Araçla mesafe
     const drivingResponse = await axios.get("https://maps.googleapis.com/maps/api/distancematrix/json", {
       params: {
         origins: origin,
@@ -104,6 +105,7 @@ const getPlaceDistances = async (req, res) => {
       },
     });
 
+    // 🚶‍♂️ Yürüyerek mesafe
     const walkingResponse = await axios.get("https://maps.googleapis.com/maps/api/distancematrix/json", {
       params: {
         origins: origin,
@@ -115,8 +117,8 @@ const getPlaceDistances = async (req, res) => {
       },
     });
 
-    const drivingInfo = drivingResponse.data.rows[0].elements;
-    const walkingInfo = walkingResponse.data.rows[0].elements;
+    const drivingInfo = drivingResponse.data.rows[0]?.elements || [];
+    const walkingInfo = walkingResponse.data.rows[0]?.elements || [];
 
     const results = drivingInfo.map((driveItem, index) => ({
       distance: driveItem.distance?.text || "Bilinmiyor",
@@ -126,12 +128,12 @@ const getPlaceDistances = async (req, res) => {
 
     return res.json(results);
   } catch (error) {
-    console.error("🔥 Mesafe API hatası:", error);
+    console.error("🔥 Mesafe API hatası:", error.message);
     res.status(500).json({ error: "❌ Mesafe verileri alınamadı." });
   }
 };
 
-// 📤 Tüm servisleri dışa aktar
+// 📤 Dışa Aktarım
 module.exports = {
   getPlacePhotos,
   getPlaceReviews,
