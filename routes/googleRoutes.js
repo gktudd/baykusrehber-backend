@@ -1,5 +1,5 @@
 const express = require("express");
-const { getPlacePhotos, getPlaceReviews } = require("../services/googleService");
+const { getPlacePhotos, getPlaceReviews,  getPlaceDistances } = require("../services/googleService");
 
 const router = express.Router();
 
