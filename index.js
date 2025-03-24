@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
@@ -9,7 +8,15 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
+
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+
+
+
+// 📌 Routes klasörünü dahil et (ÖNEMLİ!)
+const routes = require("./routes");
+app.use("/api", routes); 
+
 
 // 📌 **Zamanı "X zaman önce" formatına çevirme fonksiyonu**
 const timeAgo = (timestamp) => {
