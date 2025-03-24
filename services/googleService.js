@@ -1,20 +1,14 @@
-const express = require("express");
 const axios = require("axios");
 require("dotenv").config();
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
 const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
-// 📌 **Google Places API'den fotoğrafları al**
+// 📸 Fotoğrafları al
 const getPlacePhotos = async (req, res) => {
   const { placeId } = req.query;
   if (!placeId) return res.status(400).json({ error: "❌ Place ID gereklidir." });
 
   try {
-    console.log("📸 API İsteği:", `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=photos&key=${GOOGLE_API_KEY}`);
-    
     const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
       params: {
         place_id: placeId,
@@ -22,8 +16,6 @@ const getPlacePhotos = async (req, res) => {
         key: GOOGLE_API_KEY,
       },
     });
-
-    console.log("Google API Yanıtı:", JSON.stringify(response.data, null, 2));
 
     if (response.data.status !== "OK") {
       return res.status(404).json({ error: "❌ Fotoğraflar alınamadı veya API sınırına ulaşıldı." });
@@ -45,14 +37,12 @@ const getPlacePhotos = async (req, res) => {
   }
 };
 
-// 📌 **Google Places API'den YORUMLARI al (Sadece ilk 5 yorum)**
+// 📝 Yorumları ve puanları al
 const getPlaceReviews = async (req, res) => {
   const { placeId } = req.query;
   if (!placeId) return res.status(400).json({ error: "❌ Place ID gereklidir." });
 
   try {
-    console.log("📝 API İsteği:", `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=reviews,rating,user_ratings_total&language=tr&key=${GOOGLE_API_KEY}`);
-    
     const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
       params: {
         place_id: placeId,
@@ -61,8 +51,6 @@ const getPlaceReviews = async (req, res) => {
         key: GOOGLE_API_KEY,
       },
     });
-
-    console.log("Google API Yanıtı:", JSON.stringify(response.data, null, 2));
 
     if (response.data.status !== "OK") {
       return res.status(404).json({ error: "❌ Restoran bilgileri alınamadı veya API sınırına ulaşıldı." });
@@ -77,15 +65,12 @@ const getPlaceReviews = async (req, res) => {
     const ratingCount = result.user_ratings_total || 0;
     const reviews = result.reviews || [];
 
-    // 📌 **Sadece İlk 5 Yorum Gösterilecek**
     const formattedReviews = reviews.slice(0, 5).map(review => ({
       author: review.author_name,
       rating: review.rating,
       text: review.text,
       time: new Date(review.time * 1000).toLocaleString("tr-TR"),
     }));
-
-    console.log("✅ Yorumlar başarıyla çekildi! Yorum Sayısı:", formattedReviews.length);
 
     res.json({
       rating,
@@ -99,12 +84,56 @@ const getPlaceReviews = async (req, res) => {
   }
 };
 
-// 📌 **Sunucuyu başlat**
-app.get("/api/google-photos", getPlacePhotos);
-app.get("/api/google-reviews", getPlaceReviews);
+// 📍 Mesafeleri ve süreleri al
+const getPlaceDistances = async (req, res) => {
+  const { origin, destinations } = req.query;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server ${PORT} portunda çalışıyor...`);
-});
+  if (!origin || !destinations) {
+    return res.status(400).json({ error: "❌ origin ve destinations zorunludur." });
+  }
 
-module.exports = { getPlacePhotos, getPlaceReviews };
+  try {
+    const drivingResponse = await axios.get("https://maps.googleapis.com/maps/api/distancematrix/json", {
+      params: {
+        origins: origin,
+        destinations,
+        key: GOOGLE_API_KEY,
+        language: "tr",
+        units: "metric",
+        mode: "driving",
+      },
+    });
+
+    const walkingResponse = await axios.get("https://maps.googleapis.com/maps/api/distancematrix/json", {
+      params: {
+        origins: origin,
+        destinations,
+        key: GOOGLE_API_KEY,
+        language: "tr",
+        units: "metric",
+        mode: "walking",
+      },
+    });
+
+    const drivingInfo = drivingResponse.data.rows[0].elements;
+    const walkingInfo = walkingResponse.data.rows[0].elements;
+
+    const results = drivingInfo.map((driveItem, index) => ({
+      distance: driveItem.distance?.text || "Bilinmiyor",
+      durationByCar: driveItem.duration?.text || "Bilinmiyor",
+      durationByWalk: walkingInfo[index]?.duration?.text || "Bilinmiyor",
+    }));
+
+    return res.json(results);
+  } catch (error) {
+    console.error("🔥 Mesafe API hatası:", error);
+    res.status(500).json({ error: "❌ Mesafe verileri alınamadı." });
+  }
+};
+
+// 📤 Tüm servisleri dışa aktar
+module.exports = {
+  getPlacePhotos,
+  getPlaceReviews,
+  getPlaceDistances,
+};
