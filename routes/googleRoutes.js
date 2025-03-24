@@ -1,3 +1,4 @@
+// routes/googleRoutes.js
 const express = require("express");
 const {
   getPlacePhotos,
@@ -7,13 +8,9 @@ const {
 
 const router = express.Router();
 
-// 📸 Google Places API'den fotoğrafları al
-router.get("/photos", getPlacePhotos); // ✅ Query param: ?placeId=...
-
-// 📝 Google Places API'den yorumları al
-router.get("/reviews", getPlaceReviews); // ✅ Query param: ?placeId=...
-
-// 📍 Google Distance Matrix API ile gerçek mesafe ve süreler
-router.get("/distances", getPlaceDistances); // ✅ Query param: ?origin=...&destinations=...
+// ✅ Query parametre ile çalışsın
+router.get("/google-photos", getPlacePhotos);   // <-- Bu doğru
+router.get("/google-reviews", getPlaceReviews);
+router.get("/distances", getPlaceDistances);
 
 module.exports = router;
