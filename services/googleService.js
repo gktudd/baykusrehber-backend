@@ -6,7 +6,9 @@ const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 // 📸 Fotoğrafları al
 const getPlacePhotos = async (req, res) => {
   const { placeId } = req.query;
-  if (!placeId) return res.status(400).json({ error: "❌ Place ID gereklidir." });
+  if (!placeId) {
+    return res.status(400).json({ error: "❌ Place ID gereklidir." });
+  }
 
   try {
     const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
@@ -26,11 +28,12 @@ const getPlacePhotos = async (req, res) => {
       return res.status(404).json({ error: "⚠️ Bu mekan için fotoğraf bulunamadı." });
     }
 
-    const photoUrls = photos.map(photo => ({
-      url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_API_KEY}`
-    }));
+    // ✅ FLUTTER İÇİN DÜZGÜN ÇIKTI: Sadece dizi halinde URL'ler döndürülüyor
+    const photoUrls = photos.map(photo =>
+      `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_API_KEY}`
+    );
 
-    res.json(photoUrls);
+    return res.json(photoUrls); // ✅ Sadece [ "url1", "url2", ... ] formatında
   } catch (error) {
     console.error("🔥 Fotoğrafları çekerken hata oluştu:", error.message);
     res.status(500).json({ error: "❌ Fotoğraflar alınamadı." });
