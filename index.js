@@ -8,11 +8,11 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
-// 📌 Routes klasörünü dahil et
-const routes = require("./routes");
-app.use("/api", routes); // 🔥 Tüm route'lar burada birleşecek
+// 📌 ROUTES'u ekle (ÖNEMLİ!)
+const googleRoutes = require("./routes/googleRoutes");
+app.use("/api", googleRoutes);
 
-// 📌 Server başlat
+// 📌 Sunucuyu başlat
 app.listen(PORT, () => {
-  console.log(`🚀 Server çalışıyor: http://localhost:${PORT}`);
+  console.log(`🚀 Sunucu başarıyla çalışıyor: http://localhost:${PORT}`);
 });
