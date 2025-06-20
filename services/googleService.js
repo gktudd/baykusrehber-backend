@@ -68,12 +68,13 @@ const getPlaceReviews = async (req, res) => {
     const ratingCount = result.user_ratings_total || 0;
     const reviews = result.reviews || [];
 
-    const formattedReviews = reviews.slice(0, 5).map(review => ({
-      author: review.author_name,
-      rating: review.rating,
-      text: review.text,
-      time: new Date(review.time * 1000).toLocaleString("tr-TR"),
-    }));
+const formattedReviews = reviews.slice(0, 5).map(review => ({
+  author: review.author_name,
+  rating: review.rating,
+  text: review.text,
+  time: new Date(review.time * 1000).toLocaleString("tr-TR"), // okunabilir format
+  timestamp: review.time, // Unix zaman damgası (saniye cinsinden)
+}));
 
     res.json({
       rating,
