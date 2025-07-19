@@ -28,10 +28,10 @@ const getPlacePhotos = async (req, res) => {
       return res.status(404).json({ error: "⚠️ Bu mekan için fotoğraf bulunamadı." });
     }
 
-    // ✅ FLUTTER İÇİN DÜZGÜN ÇIKTI: Sadece dizi halinde URL'ler döndürülüyor
-    const photoUrls = photos.map(photo =>
-      `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_API_KEY}`
-    );
+    // ✅ FLUTTER İÇİN DÜZGÜN ÇIKTI: Sadece dizi halinde URL'ler döndürülüyor EN BABA 7 Fotoya kadar sorgu atacak.
+   const photoUrls = photos.slice(0, 7).map(photo =>
+  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_API_KEY}`
+);
 
     return res.json(photoUrls); // ✅ Sadece [ "url1", "url2", ... ] formatında
   } catch (error) {
@@ -64,17 +64,17 @@ const getPlaceReviews = async (req, res) => {
       return res.status(404).json({ error: "⚠️ Restoran bilgileri bulunamadı." });
     }
 
+    const reviews = (result.reviews || []).slice(0, 5); // 🔒 Sadece ilk 5 yorum
     const rating = result.rating || 0;
     const ratingCount = result.user_ratings_total || 0;
-    const reviews = result.reviews || [];
 
-const formattedReviews = reviews.slice(0, 5).map(review => ({
-  author: review.author_name,
-  rating: review.rating,
-  text: review.text,
-  time: new Date(review.time * 1000).toLocaleString("tr-TR"), // okunabilir format
-  timestamp: review.time, // Unix zaman damgası (saniye cinsinden)
-}));
+    const formattedReviews = reviews.map(review => ({
+      author: review.author_name,
+      rating: review.rating,
+      text: review.text,
+      time: new Date(review.time * 1000).toLocaleString("tr-TR"),
+      timestamp: review.time,
+    }));
 
     res.json({
       rating,
