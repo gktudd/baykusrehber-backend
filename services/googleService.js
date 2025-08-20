@@ -11,13 +11,20 @@ const getPlacePhotos = async (req, res) => {
   }
 
   try {
-    const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
-      params: {
-        place_id: placeId,
-        fields: "photos",
-        key: GOOGLE_API_KEY,
-      },
-    });
+
+  const response = await axios.get(
+  "https://maps.googleapis.com/maps/api/place/details/json",
+  {
+    params: {
+      place_id: placeId,
+      // sadece gereken alt alanlar
+      fields: "rating,user_ratings_total,reviews(author_name,rating,text,time)",
+      reviews_sort: "newest", // ya da "most_relevant"
+      language: "tr",
+      key: GOOGLE_API_KEY,
+    },
+  }
+);
 
     if (response.data.status !== "OK") {
       return res.status(404).json({ error: "❌ Fotoğraflar alınamadı veya API sınırına ulaşıldı." });
