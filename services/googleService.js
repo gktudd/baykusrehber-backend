@@ -11,20 +11,13 @@ const getPlacePhotos = async (req, res) => {
   }
 
   try {
-
-  const response = await axios.get(
-  "https://maps.googleapis.com/maps/api/place/details/json",
-  {
-    params: {
-      place_id: placeId,
-      // sadece gereken alt alanlar
-      fields: "rating,user_ratings_total,reviews(author_name,rating,text,time)",
-      reviews_sort: "newest", // ya da "most_relevant"
-      language: "tr",
-      key: GOOGLE_API_KEY,
-    },
-  }
-);
+    const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
+      params: {
+        place_id: placeId,
+        fields: "photos",
+        key: GOOGLE_API_KEY,
+      },
+    });
 
     if (response.data.status !== "OK") {
       return res.status(404).json({ error: "❌ Fotoğraflar alınamadı veya API sınırına ulaşıldı." });
@@ -35,22 +28,25 @@ const getPlacePhotos = async (req, res) => {
       return res.status(404).json({ error: "⚠️ Bu mekan için fotoğraf bulunamadı." });
     }
 
-    // ✅ FLUTTER İÇİN DÜZGÜN ÇIKTI: Sadece dizi halinde URL'ler döndürülüyor EN BABA 7 Fotoya kadar sorgu atacak.
-   const photoUrls = photos.slice(0, 7).map(photo =>
-  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_API_KEY}`
-);
+    // ✅ FLUTTER İÇİN DÜZGÜN ÇIKTI: Sadece dizi halinde URL'ler döndürülüyor (en fazla 7)
+    const photoUrls = photos.slice(0, 7).map(
+      (photo) =>
+        `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_API_KEY}`
+    );
 
     return res.json(photoUrls); // ✅ Sadece [ "url1", "url2", ... ] formatında
   } catch (error) {
     console.error("🔥 Fotoğrafları çekerken hata oluştu:", error.message);
-    res.status(500).json({ error: "❌ Fotoğraflar alınamadı." });
+    return res.status(500).json({ error: "❌ Fotoğraflar alınamadı." });
   }
 };
 
 // 📝 Yorumları ve puanları al
 const getPlaceReviews = async (req, res) => {
   const { placeId } = req.query;
-  if (!placeId) return res.status(400).json({ error: "❌ Place ID gereklidir." });
+  if (!placeId) {
+    return res.status(400).json({ error: "❌ Place ID gereklidir." });
+  }
 
   try {
     const response = await axios.get("https://maps.googleapis.com/maps/api/place/details/json", {
@@ -75,7 +71,7 @@ const getPlaceReviews = async (req, res) => {
     const rating = result.rating || 0;
     const ratingCount = result.user_ratings_total || 0;
 
-    const formattedReviews = reviews.map(review => ({
+    const formattedReviews = reviews.map((review) => ({
       author: review.author_name,
       rating: review.rating,
       text: review.text,
@@ -83,15 +79,14 @@ const getPlaceReviews = async (req, res) => {
       timestamp: review.time,
     }));
 
-    res.json({
+    return res.json({
       rating,
       ratingCount,
       reviews: formattedReviews,
     });
-
   } catch (error) {
     console.error("🔥 Yorumları çekerken hata oluştu:", error.message);
-    res.status(500).json({ error: "❌ Yorumlar alınamadı." });
+    return res.status(500).json({ error: "❌ Yorumlar alınamadı." });
   }
 };
 
@@ -140,7 +135,7 @@ const getPlaceDistances = async (req, res) => {
     return res.json(results);
   } catch (error) {
     console.error("🔥 Mesafe API hatası:", error.message);
-    res.status(500).json({ error: "❌ Mesafe verileri alınamadı." });
+    return res.status(500).json({ error: "❌ Mesafe verileri alınamadı." });
   }
 };
 
